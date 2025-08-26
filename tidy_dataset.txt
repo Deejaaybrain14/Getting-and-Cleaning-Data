@@ -1,0 +1,76 @@
+# Paquete
+suppressPackageStartupMessages(library(dplyr))
+
+# Asegúrate de tener la carpeta descomprimida
+if (!dir.exists("UCI HAR Dataset")) unzip("dataset.zip")
+
+# === 1) Cargar metadatos ===
+features   <- read.table("UCI HAR Dataset/features.txt",
+                         col.names = c("index","feature"),
+                         stringsAsFactors = FALSE)
+activities <- read.table("UCI HAR Dataset/activity_labels.txt",
+                         col.names = c("code","activity"))
+
+# Índices SOLO de mean() y std() (excluye meanFreq, angle, etc.)
+mean_std_idx <- grep("-(mean|std)\\(\\)", features$feature)
+
+# === 2) Cargar TRAIN ===
+subject_train <- read.table("UCI HAR Dataset/train/subject_train.txt",
+                            col.names = "subject")
+y_train <- read.table("UCI HAR Dataset/train/y_train.txt",
+                      col.names = "code")
+X_train <- read.table("UCI HAR Dataset/train/X_train.txt")
+# Filtrar columnas mean()/std()
+X_train <- X_train[, mean_std_idx]
+colnames(X_train) <- features$feature[mean_std_idx]
+
+# === 3) Cargar TEST ===
+subject_test <- read.table("UCI HAR Dataset/test/subject_test.txt",
+                           col.names = "subject")
+y_test <- read.table("UCI HAR Dataset/test/y_test.txt",
+                     col.names = "code")
+X_test <- read.table("UCI HAR Dataset/test/X_test.txt")
+X_test <- X_test[, mean_std_idx]
+colnames(X_test) <- features$feature[mean_std_idx]
+
+# === 4) Unir TRAIN + TEST ===
+X <- rbind(X_train, X_test)
+Y <- rbind(y_train, y_test)
+Subject <- rbind(subject_train, subject_test)
+merged <- cbind(Subject, Y, X)
+
+# === 5) Reemplazar códigos por nombres de actividad ===
+merged$code <- factor(merged$code,
+                      levels = activities$code,
+                      labels = activities$activity)
+
+# === 6) Limpiar y hacer nombres descriptivos ===
+names(merged)[1:2] <- c("subject", "activity")
+
+# Limpiezas y expansiones
+clean_names <- names(merged)
+clean_names <- gsub("^t", "Time", clean_names)
+clean_names <- gsub("^f", "Frequency", clean_names)
+clean_names <- gsub("Acc", "Accelerometer", clean_names)
+clean_names <- gsub("Gyro", "Gyroscope", clean_names)
+clean_names <- gsub("Mag", "Magnitude", clean_names)
+clean_names <- gsub("BodyBody", "Body", clean_names)
+# Quitar paréntesis/guiones y estandarizar Mean/STD
+clean_names <- gsub("\\(\\)", "", clean_names)
+clean_names <- gsub("-", "", clean_names)
+clean_names <- gsub("mean", "Mean", clean_names, ignore.case = TRUE)
+clean_names <- gsub("std", "STD", clean_names, ignore.case = TRUE)
+names(merged) <- clean_names
+
+# === 7) Dataset final (promedio por sujeto y actividad) ===
+finalData <- merged %>%
+  group_by(subject, activity) %>%
+  summarise(across(everything(), mean), .groups = "drop")
+
+# === 8) Guardar salida ===
+write.table(finalData, "tidy_dataset.txt", row.name = FALSE)
+
+# Chequeos rápidos
+cat("Dimensiones finalData:", dim(finalData)[1], "x", dim(finalData)[2], "\n")
+cat("Archivo generado:", normalizePath("tidy_dataset.txt"), "\n")
+head(finalData, 3)
