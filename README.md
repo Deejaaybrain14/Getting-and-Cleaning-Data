@@ -23,3 +23,15 @@ Este repositorio contiene la entrega del proyecto final del curso **Getting and 
 
 ```r
 source("run_analysis.R")
+
+
+### Ejemplo de salida (`tidy_dataset.txt`)
+
+Las primeras filas del dataset final (180 × 68):
+
+| subject | activity           | TimeBodyAccelerometerMeanX | TimeBodyAccelerometerMeanY | TimeBodyAccelerometerMeanZ | TimeBodyAccelerometerSTDX |
+|---------|--------------------|----------------------------|----------------------------|----------------------------|---------------------------|
+| 1       | WALKING            | 0.277                      | -0.017                     | -0.111                     | -0.284                    |
+| 1       | WALKING_UPSTAIRS   | 0.255                      | -0.024                     | -0.097                     | -0.355                    |
+| 1       | WALKING_DOWNSTAIRS | 0.289                      | -0.0099                    | -0.108                     |  0.030                    |
+
